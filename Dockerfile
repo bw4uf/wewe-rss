@@ -33,9 +33,13 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /usr/src/app/apps/server/dist ./dist
 COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./docker-bootstrap.sh
+COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
 
 # 设置脚本权限
 RUN chmod +x ./docker-bootstrap.sh
+
+# 创建兼容性入口文件，以防平台尝试运行 index.js
+RUN echo "// Compatibility entry point\nmodule.exports = require('./main');" > ./dist/index.js
 
 # 暴露端口
 EXPOSE 4000
