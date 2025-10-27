@@ -11,15 +11,35 @@ WORKDIR /usr/src/app
 # Install all dependencies including devDependencies for build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-# FORCE CACHE INVALIDATION - DO NOT USE OLD CACHED LAYERS
-ENV CACHE_BUST=20250127_v2
-RUN echo "Force rebuild - Cache bust: $CACHE_BUST - $(date)" > /tmp/build-info
-RUN echo "Verifying pnpm and tools..." && pnpm --version && which pnpm
+# ULTIMATE CACHE BUSTER - FORCE COMPLETE REBUILD
+ENV FORCE_REBUILD=20250127_v3_FINAL
+ENV NO_CACHE=true
+RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
+    echo "Verifying tools..." && \
+    pnpm --version && \
+    which pnpm && \
+    echo "PATH: $PATH"
 
-# Build projects using pnpm exec to ensure CLI tools are in PATH
-# IMPORTANT: These commands replace the old 'pnpm run -r build'
-RUN echo "Building server..." && cd apps/server && pnpm exec nest build
-RUN echo "Building web..." && cd apps/web && pnpm exec tsc && pnpm exec vite build
+# COMPLETELY NEW BUILD APPROACH - NO MORE pnpm run -r build
+# Build each project individually with explicit commands
+RUN echo "=== BUILDING SERVER APPLICATION ===" && \
+    cd apps/server && \
+    echo "Current directory: $(pwd)" && \
+    echo "Available scripts:" && \
+    cat package.json | grep -A 10 '"scripts"' && \
+    pnpm exec nest build && \
+    echo "Server build completed, checking output:" && \
+    ls -la dist/
+
+RUN echo "=== BUILDING WEB APPLICATION ===" && \
+    cd apps/web && \
+    echo "Current directory: $(pwd)" && \
+    echo "Available scripts:" && \
+    cat package.json | grep -A 10 '"scripts"' && \
+    pnpm exec tsc && \
+    pnpm exec vite build && \
+    echo "Web build completed, checking output:" && \
+    ls -la ../server/client/
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
