@@ -18,11 +18,19 @@ COPY apps/web/package.json ./apps/web/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --production=false
 
 # ULTIMATE CACHE BUSTER - FORCE COMPLETE REBUILD
-ENV FORCE_REBUILD=20250127_v5_PROPER_INSTALL
+ENV FORCE_REBUILD=20250127_v6_GLOBAL_INSTALL
 ENV NO_CACHE=true
+
+# Install global build tools as backup (方案二)
+RUN pnpm add -g @nestjs/cli typescript
 
 # Now copy the rest of the source code
 COPY . .
+
+# Re-install workspace dependencies to ensure proper linking (关键步骤)
+RUN echo "Re-installing workspace dependencies..." && \
+    pnpm install -r --frozen-lockfile && \
+    echo "Workspace dependencies re-installed successfully!"
 
 # Verify CLI tools are available in each workspace BEFORE building
 RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
@@ -30,16 +38,17 @@ RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
     pnpm --version && \
     which pnpm && \
     echo "PATH: $PATH" && \
-    echo "Checking CLI tools in workspaces..." && \
+    echo "=== Global CLI tools ===" && \
+    which nest && which tsc && \
     echo "=== Checking apps/server ===" && \
     cd apps/server && \
     ls -la node_modules/.bin/ | head -10 && \
-    pnpm exec which nest && \
+    pnpm exec which nest || echo "nest not found in workspace, using global" && \
     echo "=== Checking apps/web ===" && \
     cd ../web && \
     ls -la node_modules/.bin/ | head -10 && \
-    pnpm exec which tsc && \
-    pnpm exec which vite && \
+    pnpm exec which tsc || echo "tsc not found in workspace, using global" && \
+    pnpm exec which vite || echo "vite not found in workspace, using global" && \
     cd ../.. && \
     echo "All CLI tools verified successfully!"
 

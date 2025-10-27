@@ -20,6 +20,9 @@
     "fmt.check": "prettier --check ."
   },
   "devDependencies": {
+    "@nestjs/cli": "^10.3.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4",
     "prettier": "^3.2.5"
   }
 }
