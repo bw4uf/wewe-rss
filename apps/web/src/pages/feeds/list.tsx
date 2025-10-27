@@ -31,9 +31,19 @@ const ArticleList: FC = () => {
       },
     );
 
+  type ArticleItem = {
+    id: string;
+    mpId: string;
+    title: string;
+    picUrl: string;
+    publishTime: number;
+    createdAt: string;
+    updatedAt: string | null;
+  };
+
   const items = useMemo(() => {
-    const items = data
-      ? data.pages.reduce((acc, page) => [...acc, ...page.items], [] as any[])
+    const items: ArticleItem[] = data
+      ? data.pages.reduce((acc, page) => [...acc, ...page.items], [] as ArticleItem[])
       : [];
 
     return items;
