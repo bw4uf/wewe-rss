@@ -14,17 +14,28 @@ WORKDIR /usr/src/app
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --production=false
 
 # ULTIMATE CACHE BUSTER - FORCE COMPLETE REBUILD
-ENV FORCE_REBUILD=20250127_v3_FINAL
+ENV FORCE_REBUILD=20250127_v4_WORKSPACE_FIX
 ENV NO_CACHE=true
+
+# Ensure all workspace dependencies are properly linked after copying all files
+# This step is crucial for monorepo setups to ensure each workspace has access to its dependencies
+RUN echo "Re-installing workspace dependencies to ensure proper linking..." && \
+    pnpm install -r --frozen-lockfile --offline && \
+    echo "Workspace dependencies re-linked successfully!"
+
 RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
-    echo "Verifying tools..." && \
+    echo "Verifying tools availability..." && \
     pnpm --version && \
     which pnpm && \
-    echo "PATH: $PATH"
+    echo "PATH: $PATH" && \
+    echo "Checking CLI tools in workspaces..." && \
+    cd apps/server && pnpm exec which nest && \
+    cd ../web && pnpm exec which tsc && pnpm exec which vite && \
+    cd ../..
 
-# Now that devDependencies are installed, we can use the original build command
-# This should work because @nestjs/cli, typescript, and vite are now available
-RUN echo "Building all projects with devDependencies available..." && \
+# Now build with properly linked workspace dependencies
+# Using updated build scripts that explicitly use pnpm exec
+RUN echo "Building all projects with workspace dependencies properly linked..." && \
     pnpm run -r build && \
     echo "Build completed successfully!"
 
