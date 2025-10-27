@@ -134,7 +134,7 @@ export class FeedsService {
     return html;
   }
 
-  async tryGetContent(id: string) {
+  async tryGetContent(id: string): Promise<string> {
     let content = mpCache.get(id);
     if (content) {
       return content;
@@ -146,7 +146,7 @@ export class FeedsService {
       return '获取全文失败，请重试~';
     });
     mpCache.set(id, content);
-    return content;
+    return content || '获取全文失败，请重试~';
   }
 
   async renderFeed({
