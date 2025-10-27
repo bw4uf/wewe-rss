@@ -11,12 +11,15 @@ WORKDIR /usr/src/app
 # Install all dependencies including devDependencies for build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-# Cache buster to force rebuild - 2025-01-27
-RUN echo "Build timestamp: $(date)" > /tmp/build-info
+# FORCE CACHE INVALIDATION - DO NOT USE OLD CACHED LAYERS
+ENV CACHE_BUST=20250127_v2
+RUN echo "Force rebuild - Cache bust: $CACHE_BUST - $(date)" > /tmp/build-info
+RUN echo "Verifying pnpm and tools..." && pnpm --version && which pnpm
 
 # Build projects using pnpm exec to ensure CLI tools are in PATH
-RUN cd apps/server && pnpm exec nest build
-RUN cd apps/web && pnpm exec tsc && pnpm exec vite build
+# IMPORTANT: These commands replace the old 'pnpm run -r build'
+RUN echo "Building server..." && cd apps/server && pnpm exec nest build
+RUN echo "Building web..." && cd apps/web && pnpm exec tsc && pnpm exec vite build
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
