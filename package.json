@@ -5,6 +5,7 @@
   "author": "cooderl <cooder@111965.xyz>",
   "description": "",
   "main": "index.js",
+  "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=20.9.0",
     "pnpm": ">=8.6.1",

@@ -1,56 +1,52 @@
-FROM node:20.16.0-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# 使用稳定的 Node.js 镜像
+FROM node:20-alpine AS base
 
-RUN npm i -g pnpm
+# 启用 corepack 来管理 pnpm 版本 (Node.js 18+ 通常自带)
+RUN corepack enable
 
 FROM base AS build
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# First, copy package files for dependency installation
+# 复制包管理文件
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 
-# Install all dependencies including devDependencies for build
-# CRITICAL: Use --production=false to ensure devDependencies are installed
-# This is needed for CLI tools like @nestjs/cli, typescript, vite, etc.
+# 根据 package.json 中的 "packageManager" 字段安装指定版本的 pnpm
+RUN corepack install
+
+# 安装所有依赖（包括开发依赖）
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --production=false
 
-# ULTIMATE CACHE BUSTER - FORCE COMPLETE REBUILD
-ENV FORCE_REBUILD=20250127_v6_GLOBAL_INSTALL
-ENV NO_CACHE=true
-
-# Install global build tools as backup (方案二)
-RUN pnpm add -g @nestjs/cli typescript
-
-# Now copy the rest of the source code
+# 复制项目源代码
 COPY . .
 
-# Re-install workspace dependencies to ensure proper linking (关键步骤)
-RUN echo "Re-installing workspace dependencies..." && \
-    pnpm install -r --frozen-lockfile && \
-    echo "Workspace dependencies re-installed successfully!"
+# 再次确保所有工作区（workspace）的依赖都被正确安装和链接
+RUN pnpm install -r --frozen-lockfile
 
-# Verify CLI tools are available in each workspace BEFORE building
+# CACHE BUSTER - 确保重新构建
+ENV FORCE_REBUILD=20250127_v7_COREPACK_FIX
+ENV NO_CACHE=true
+
+# 验证 CLI 工具是否可用
 RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
-    echo "Verifying tools availability..." && \
+    echo "=== 验证 pnpm 和工作区设置 ===" && \
     pnpm --version && \
-    which pnpm && \
-    echo "PATH: $PATH" && \
-    echo "=== Global CLI tools ===" && \
-    which nest && which tsc && \
-    echo "=== Checking apps/server ===" && \
+    pnpm list -r --depth=0 && \
+    echo "=== 验证 CLI 工具安装 ===" && \
+    echo "检查根目录 node_modules/.bin:" && \
+    ls -la node_modules/.bin/ | grep -E "(nest|tsc|vite)" || echo "根目录未找到CLI工具" && \
+    echo "检查 apps/server:" && \
     cd apps/server && \
-    ls -la node_modules/.bin/ | head -10 && \
-    pnpm exec which nest || echo "nest not found in workspace, using global" && \
-    echo "=== Checking apps/web ===" && \
+    ls -la node_modules/.bin/ | grep -E "(nest|tsc)" || echo "server未找到CLI工具" && \
+    npx nest -v || echo "npx nest 失败" && \
+    echo "检查 apps/web:" && \
     cd ../web && \
-    ls -la node_modules/.bin/ | head -10 && \
-    pnpm exec which tsc || echo "tsc not found in workspace, using global" && \
-    pnpm exec which vite || echo "vite not found in workspace, using global" && \
+    ls -la node_modules/.bin/ | grep -E "(tsc|vite)" || echo "web未找到CLI工具" && \
+    npx tsc -v || echo "npx tsc 失败" && \
+    npx vite --version || echo "npx vite 失败" && \
     cd ../.. && \
-    echo "All CLI tools verified successfully!"
+    echo "CLI工具验证完成!"
 
 # Now build with properly installed workspace dependencies
 # Using updated build scripts that explicitly use pnpm exec
