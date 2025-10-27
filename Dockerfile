@@ -9,7 +9,9 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app
 
 # Install all dependencies including devDependencies for build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# CRITICAL: Use --production=false to ensure devDependencies are installed
+# This is needed for CLI tools like @nestjs/cli, typescript, vite, etc.
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --production=false
 
 # ULTIMATE CACHE BUSTER - FORCE COMPLETE REBUILD
 ENV FORCE_REBUILD=20250127_v3_FINAL
@@ -20,26 +22,11 @@ RUN echo "FORCE REBUILD: $FORCE_REBUILD at $(date)" && \
     which pnpm && \
     echo "PATH: $PATH"
 
-# COMPLETELY NEW BUILD APPROACH - NO MORE pnpm run -r build
-# Build each project individually with explicit commands
-RUN echo "=== BUILDING SERVER APPLICATION ===" && \
-    cd apps/server && \
-    echo "Current directory: $(pwd)" && \
-    echo "Available scripts:" && \
-    cat package.json | grep -A 10 '"scripts"' && \
-    pnpm exec nest build && \
-    echo "Server build completed, checking output:" && \
-    ls -la dist/
-
-RUN echo "=== BUILDING WEB APPLICATION ===" && \
-    cd apps/web && \
-    echo "Current directory: $(pwd)" && \
-    echo "Available scripts:" && \
-    cat package.json | grep -A 10 '"scripts"' && \
-    pnpm exec tsc && \
-    pnpm exec vite build && \
-    echo "Web build completed, checking output:" && \
-    ls -la ../server/client/
+# Now that devDependencies are installed, we can use the original build command
+# This should work because @nestjs/cli, typescript, and vite are now available
+RUN echo "Building all projects with devDependencies available..." && \
+    pnpm run -r build && \
+    echo "Build completed successfully!"
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
