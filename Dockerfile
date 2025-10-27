@@ -11,6 +11,9 @@ WORKDIR /usr/src/app
 # Install all dependencies including devDependencies for build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
+# Cache buster to force rebuild - 2025-01-27
+RUN echo "Build timestamp: $(date)" > /tmp/build-info
+
 # Build projects using pnpm exec to ensure CLI tools are in PATH
 RUN cd apps/server && pnpm exec nest build
 RUN cd apps/web && pnpm exec tsc && pnpm exec vite build
