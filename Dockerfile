@@ -8,9 +8,12 @@ FROM base AS build
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 
+# Install all dependencies including devDependencies for build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-RUN pnpm run -r build
+# Build projects using pnpm exec to ensure CLI tools are in PATH
+RUN cd apps/server && pnpm exec nest build
+RUN cd apps/web && pnpm exec tsc && pnpm exec vite build
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
