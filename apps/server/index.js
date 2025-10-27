@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-// This file serves as a compatibility layer for platforms that expect index.js
-// Redirect to the actual NestJS application entry point
+// Compatibility entry point for platforms that expect index.js
+// This file redirects to the actual NestJS application entry point
 
+// Import and start the main application
 require('./dist/main');
