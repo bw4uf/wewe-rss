@@ -5,14 +5,22 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN npm i -g pnpm
 
 FROM base AS build
-COPY . /usr/src/app
 WORKDIR /usr/src/app
+
+# 先复制清单文件，最大化缓存并确保 workspace 安装识别到子项目
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/server/package.json ./apps/server/
+COPY apps/web/package.json ./apps/web/
 
 RUN npm config set registry https://registry.npmmirror.com
 RUN echo "PATH=$PATH" && which node && which pnpm
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --force
+# 使用递归安装以在各子包安装 devDependencies（避免 CLI 未被安装到子包）
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm -r install --frozen-lockfile
 
-# 使用 pnpm 的 filter exec 在包上下文执行本地 CLI，避免 npx 解析问题
+# 复制源码
+COPY . .
+
+# 使用 pnpm 的 filter exec 在包上下文执行本地 CLI，避免递归 PATH 注入差异
 RUN pnpm --filter server exec nest build && \
     pnpm --filter web exec tsc && \
     pnpm --filter web exec vite build
