@@ -85,10 +85,9 @@ ENV MAX_REQUEST_PER_MINUTE=60
 ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
-# 保持在根目录运行以兼容平台入口，并加入回退启动逻辑
-WORKDIR /app
-# 优先执行 /app/dist/index.js；若不存在则回退到 apps/server 启动脚本
-ENTRYPOINT ["sh", "-c", "node dist/index.js || (cd apps/server && sh docker-bootstrap.sh)"]
+# 直接在服务端包目录启动，避免根入口缺失导致崩溃
+WORKDIR /app/apps/server
+CMD ["./docker-bootstrap.sh"]
 
 # ------- 运行阶段（sqlite 变体）-------
 FROM node:20-alpine AS app-sqlite
@@ -139,7 +138,6 @@ ENV MAX_REQUEST_PER_MINUTE=60
 ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
-# 保持在根目录运行以兼容平台入口，并加入回退启动逻辑
-WORKDIR /app
-# 优先执行 /app/dist/index.js；若不存在则回退到 apps/server 启动脚本
-ENTRYPOINT ["sh", "-c", "node dist/index.js || (cd apps/server && sh docker-bootstrap.sh)"]
+# 直接在服务端包目录启动，避免根入口缺失导致崩溃
+WORKDIR /app/apps/server
+CMD ["./docker-bootstrap.sh"]
