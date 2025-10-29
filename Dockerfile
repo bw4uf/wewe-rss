@@ -26,7 +26,7 @@ RUN mkdir -p dist && \
     echo 'const { execSync } = require("child_process");' >> dist/index.js && \
     echo 'try {' >> dist/index.js && \
     echo '  console.log("🔄 Running database migrations...");' >> dist/index.js && \
-    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app" });' >> dist/index.js && \
+    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app/apps/server" });' >> dist/index.js && \
     echo '  console.log("🚀 Starting NestJS application...");' >> dist/index.js && \
     echo '  require("./apps/server/dist/main");' >> dist/index.js && \
     echo '} catch (error) {' >> dist/index.js && \
@@ -54,7 +54,6 @@ COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
 COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
-COPY dist/index.js ./dist/index.js
 
 # 设置脚本权限
 RUN chmod +x ./apps/server/docker-bootstrap.sh
@@ -109,7 +108,6 @@ COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
 COPY --from=builder /usr/src/app/apps/server/prisma-sqlite ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
-COPY dist/index.js ./dist/index.js
 
 # 设置脚本权限
 RUN chmod +x ./apps/server/docker-bootstrap.sh
