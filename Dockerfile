@@ -51,7 +51,7 @@ RUN pnpm install --prod --force
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/apps/server/dist ./apps/server/dist
 COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
-COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
+COPY --from=builder /usr/src/app/apps/server/prisma ./apps/server/prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 
@@ -59,19 +59,6 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 RUN chmod +x ./apps/server/docker-bootstrap.sh
 
 # 确保根入口 dist/index.js 存在（Zeabur 会强制执行）
-RUN mkdir -p dist && \
-    echo 'console.log("🚀 Starting via root dist/index.js...");' > dist/index.js && \
-    echo 'const { execSync } = require("child_process");' >> dist/index.js && \
-    echo 'try {' >> dist/index.js && \
-    echo '  console.log("🔄 Running database migrations...");' >> dist/index.js && \
-    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app/apps/server" });' >> dist/index.js && \
-    echo '  console.log("🚀 Starting NestJS application...");' >> dist/index.js && \
-    echo '  require("./apps/server/dist/main");' >> dist/index.js && \
-    echo '} catch (error) {' >> dist/index.js && \
-    echo '  console.error("❌ Startup failed:", error.message);' >> dist/index.js && \
-    echo '  console.error("Error stack:", error.stack);' >> dist/index.js && \
-    echo '  process.exit(1);' >> dist/index.js && \
-    echo '}' >> dist/index.js
 
 
 # 暴露端口
@@ -86,8 +73,8 @@ ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
 # 直接在服务端包目录启动，避免根入口缺失导致崩溃
-WORKDIR /app/apps/server
-CMD ["./docker-bootstrap.sh"]
+WORKDIR /app
+CMD ["node", "dist/index.js"]
 
 # ------- 运行阶段（sqlite 变体）-------
 FROM node:20-alpine AS app-sqlite
@@ -105,7 +92,7 @@ RUN pnpm install --prod --force
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/apps/server/dist ./apps/server/dist
 COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
-COPY --from=builder /usr/src/app/apps/server/prisma-sqlite ./prisma
+COPY --from=builder /usr/src/app/apps/server/prisma-sqlite ./apps/server/prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 
@@ -113,19 +100,6 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 RUN chmod +x ./apps/server/docker-bootstrap.sh
 
 # 确保根入口 dist/index.js 存在（Zeabur 会强制执行）
-RUN mkdir -p dist && \
-    echo 'console.log("🚀 Starting via root dist/index.js...");' > dist/index.js && \
-    echo 'const { execSync } = require("child_process");' >> dist/index.js && \
-    echo 'try {' >> dist/index.js && \
-    echo '  console.log("🔄 Running database migrations...");' >> dist/index.js && \
-    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app/apps/server" });' >> dist/index.js && \
-    echo '  console.log("🚀 Starting NestJS application...");' >> dist/index.js && \
-    echo '  require("./apps/server/dist/main");' >> dist/index.js && \
-    echo '} catch (error) {' >> dist/index.js && \
-    echo '  console.error("❌ Startup failed:", error.message);' >> dist/index.js && \
-    echo '  console.error("Error stack:", error.stack);' >> dist/index.js && \
-    echo '  process.exit(1);' >> dist/index.js && \
-    echo '}' >> dist/index.js
 
 # 暴露端口
 EXPOSE 4000
@@ -139,5 +113,5 @@ ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
 # 直接在服务端包目录启动，避免根入口缺失导致崩溃
-WORKDIR /app/apps/server
-CMD ["./docker-bootstrap.sh"]
+WORKDIR /app
+CMD ["node", "dist/index.js"]
