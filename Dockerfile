@@ -85,6 +85,7 @@ ENV MAX_REQUEST_PER_MINUTE=60
 ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
-# 保持在根目录运行以兼容平台入口
+# 保持在根目录运行以兼容平台入口，并加入回退启动逻辑
 WORKDIR /app
-CMD ["node", "dist/index.js"]
+# 优先执行 /app/dist/index.js；若不存在则回退到 apps/server 启动脚本
+ENTRYPOINT ["sh", "-c", "node dist/index.js || (cd apps/server && sh docker-bootstrap.sh)"]
