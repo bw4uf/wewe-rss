@@ -50,13 +50,13 @@ RUN pnpm install --prod --force
 # 拷贝构建产物
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/apps/server/dist ./apps/server/dist
-COPY --from=builder /usr/src/app/apps/server/client ./client
-COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
-COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./docker-bootstrap.sh
-COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
+COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
+COPY --from=builder /usr/src/app/apps/server/prisma ./apps/server/prisma
+COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
+COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 
 # 设置脚本权限
-RUN chmod +x ./docker-bootstrap.sh
+RUN chmod +x ./apps/server/docker-bootstrap.sh
 
 
 
@@ -71,5 +71,6 @@ ENV MAX_REQUEST_PER_MINUTE=60
 ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
-# 启动命令 - 兼容 Zeabur 的期望路径
-CMD ["node", "dist/index.js"]
+# 切换到服务目录并使用启动脚本（迁移+启动）
+WORKDIR /app/apps/server
+CMD ["sh", "docker-bootstrap.sh"]
