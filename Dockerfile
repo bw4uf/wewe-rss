@@ -10,6 +10,10 @@ WORKDIR /usr/src/app
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm -r install --frozen-lockfile
 
+# 使用国内镜像并安装构建所需CLI（兜底，避免未解析到本地dev依赖时失败）
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm i -g @nestjs/cli typescript vite
+
 RUN pnpm run -r build
 
 RUN pnpm deploy --filter=server --prod /app
