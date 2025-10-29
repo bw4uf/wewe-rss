@@ -15,7 +15,7 @@ RUN pnpm install --force
 
 # 拷贝源码 & 构建
 COPY . .
-RUN pnpm run -r build
+RUN pnpm run build:server && pnpm run build:web
 
 # ------- 运行阶段 -------
 FROM node:20-alpine
@@ -31,6 +31,7 @@ RUN pnpm install --prod --force
 
 # 拷贝构建产物
 COPY --from=builder /usr/src/app/apps/server/dist ./dist
+COPY --from=builder /usr/src/app/apps/server/client ./client
 COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
@@ -38,29 +39,11 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
 # 设置脚本权限
 RUN chmod +x ./docker-bootstrap.sh
 
-# 创建兼容性入口文件，重定向到正确的 main.js
-RUN echo '#!/usr/bin/env node' > ./dist/index.js && \
-    echo '// Compatibility entry point for Zeabur - redirects to main.js' >> ./dist/index.js && \
-    echo 'const { execSync } = require("child_process");' >> ./dist/index.js && \
-    echo 'const path = require("path");' >> ./dist/index.js && \
-    echo 'try {' >> ./dist/index.js && \
-    echo '  console.log("🔄 Running database migrations...");' >> ./dist/index.js && \
-    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app" });' >> ./dist/index.js && \
-    echo '  console.log("🚀 Starting NestJS application...");' >> ./dist/index.js && \
-    echo '  require("./main");' >> ./dist/index.js && \
-    echo '} catch (error) {' >> ./dist/index.js && \
-    echo '  console.error("❌ Startup failed:", error.message);' >> ./dist/index.js && \
-    echo '  console.error("Error stack:", error.stack);' >> ./dist/index.js && \
-    echo '  process.exit(1);' >> ./dist/index.js && \
-    echo '}' >> ./dist/index.js && \
-    chmod +x ./dist/index.js
+# 创建兼容性入口文件，重定向到 main.js
+RUN echo 'console.log("🚀 Starting via index.js compatibility layer...");' > ./dist/index.js && \
+    echo 'require("./main");' >> ./dist/index.js
 
-# 调试信息：显式打印产物
-RUN echo "📁 Contents of /app/dist:" && ls -la /app/dist
-RUN echo "📄 Contents of /app/dist/index.js:" && cat /app/dist/index.js
-RUN [ -f /app/dist/main.js ] || (echo "❌ main.js not found" && exit 1)
-RUN [ -f /app/dist/index.js ] || (echo "❌ index.js not found" && exit 1)
-RUN echo "✅ All required files are present"
+
 
 # 暴露端口
 EXPOSE 4000
