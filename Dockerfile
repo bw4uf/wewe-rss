@@ -2,6 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
+# 配置 npm 镜像源（解决 Zeabur 构建时网络超时问题）
+RUN npm config set registry https://registry.npmmirror.com
+
 # 安装 pnpm
 RUN npm i -g pnpm
 
