@@ -11,7 +11,7 @@ COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 
 # 安装全部依赖（含 dev）
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --force
 
 # 拷贝源码 & 构建
 COPY . .
@@ -27,7 +27,7 @@ RUN npm i -g pnpm
 # 拷贝依赖描述文件 & 安装生产依赖
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --force
 
 # 拷贝构建产物
 COPY --from=builder /usr/src/app/apps/server/dist ./dist
@@ -42,21 +42,25 @@ RUN chmod +x ./docker-bootstrap.sh
 RUN echo '#!/usr/bin/env node' > ./dist/index.js && \
     echo '// Compatibility entry point for Zeabur' >> ./dist/index.js && \
     echo 'const { execSync } = require("child_process");' >> ./dist/index.js && \
+    echo 'const path = require("path");' >> ./dist/index.js && \
     echo 'try {' >> ./dist/index.js && \
     echo '  console.log("🔄 Running database migrations...");' >> ./dist/index.js && \
-    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env });' >> ./dist/index.js && \
+    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app" });' >> ./dist/index.js && \
     echo '  console.log("🚀 Starting application...");' >> ./dist/index.js && \
-    echo '  require("./main");' >> ./dist/index.js && \
+    echo '  require(path.join(__dirname, "main"));' >> ./dist/index.js && \
     echo '} catch (error) {' >> ./dist/index.js && \
     echo '  console.error("❌ Startup failed:", error.message);' >> ./dist/index.js && \
+    echo '  console.error("Error stack:", error.stack);' >> ./dist/index.js && \
     echo '  process.exit(1);' >> ./dist/index.js && \
-    echo '}' >> ./dist/index.js
-RUN chmod +x ./dist/index.js
+    echo '}' >> ./dist/index.js && \
+    chmod +x ./dist/index.js
 
 # 调试信息：显式打印产物
-RUN ls -l /app/dist
+RUN echo "📁 Contents of /app/dist:" && ls -la /app/dist
+RUN echo "📄 Contents of /app/dist/index.js:" && cat /app/dist/index.js
 RUN [ -f /app/dist/main.js ] || (echo "❌ main.js not found" && exit 1)
 RUN [ -f /app/dist/index.js ] || (echo "❌ index.js not found" && exit 1)
+RUN echo "✅ All required files are present"
 
 # 暴露端口
 EXPOSE 4000
