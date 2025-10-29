@@ -17,7 +17,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm -r install --frozen-lockf
 RUN npm config set registry https://registry.npmmirror.com && \
     npm i -g @nestjs/cli typescript vite
 
-RUN pnpm run -r build
+# 使用显式的根脚本构建，避免递归运行时 PATH 注入差异
+RUN pnpm run build:server && pnpm run build:web
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
