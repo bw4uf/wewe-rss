@@ -9,16 +9,13 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app
 
 RUN npm config set registry https://registry.npmmirror.com
-RUN pnpm add -g @nestjs/cli typescript vite
-RUN echo "PATH=$PATH" && which node && which pnpm && which nest && which tsc && which vite
+RUN echo "PATH=$PATH" && which node && which pnpm
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --force
 
-# 使用国内镜像并安装构建所需CLI（兜底，避免未解析到本地dev依赖时失败）
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm i -g @nestjs/cli typescript vite
-
-# 使用显式的根脚本构建，避免递归运行时 PATH 注入差异
-RUN pnpm run build:server && pnpm run build:web
+# 使用 pnpm 的 filter exec 在包上下文执行本地 CLI，避免 npx 解析问题
+RUN pnpm --filter server exec nest build && \
+    pnpm --filter web exec tsc && \
+    pnpm --filter web exec vite build
 
 RUN pnpm deploy --filter=server --prod /app
 RUN pnpm deploy --filter=server --prod /app-sqlite
