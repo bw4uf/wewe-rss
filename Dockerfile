@@ -38,16 +38,16 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
 # 设置脚本权限
 RUN chmod +x ./docker-bootstrap.sh
 
-# 创建兼容性入口文件，包含完整启动逻辑
+# 创建兼容性入口文件，重定向到正确的 main.js
 RUN echo '#!/usr/bin/env node' > ./dist/index.js && \
-    echo '// Compatibility entry point for Zeabur' >> ./dist/index.js && \
+    echo '// Compatibility entry point for Zeabur - redirects to main.js' >> ./dist/index.js && \
     echo 'const { execSync } = require("child_process");' >> ./dist/index.js && \
     echo 'const path = require("path");' >> ./dist/index.js && \
     echo 'try {' >> ./dist/index.js && \
     echo '  console.log("🔄 Running database migrations...");' >> ./dist/index.js && \
     echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app" });' >> ./dist/index.js && \
-    echo '  console.log("🚀 Starting application...");' >> ./dist/index.js && \
-    echo '  require(path.join(__dirname, "main"));' >> ./dist/index.js && \
+    echo '  console.log("🚀 Starting NestJS application...");' >> ./dist/index.js && \
+    echo '  require("./main");' >> ./dist/index.js && \
     echo '} catch (error) {' >> ./dist/index.js && \
     echo '  console.error("❌ Startup failed:", error.message);' >> ./dist/index.js && \
     echo '  console.error("Error stack:", error.stack);' >> ./dist/index.js && \
@@ -73,5 +73,5 @@ ENV MAX_REQUEST_PER_MINUTE=60
 ENV AUTH_CODE=""
 ENV DATABASE_URL=""
 
-# 启动命令 - 直接使用 Zeabur 期望的入口文件
+# 启动命令 - 兼容 Zeabur 的期望路径
 CMD ["node", "dist/index.js"]
