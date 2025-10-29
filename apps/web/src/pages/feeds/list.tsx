@@ -31,19 +31,9 @@ const ArticleList: FC = () => {
       },
     );
 
-  type ArticleItem = {
-    id: string;
-    mpId: string;
-    title: string;
-    picUrl: string;
-    publishTime: number;
-    createdAt: string;
-    updatedAt: string | null;
-  };
-
   const items = useMemo(() => {
-    const items: ArticleItem[] = data
-      ? data.pages.reduce((acc, page) => [...acc, ...page.items], [] as ArticleItem[])
+    const items = data
+      ? data.pages.reduce((acc, page) => [...acc, ...page.items], [] as any[])
       : [];
 
     return items;
@@ -86,12 +76,10 @@ const ArticleList: FC = () => {
           items={items || []}
           loadingContent={<Spinner />}
         >
-          {(item) => {
-            const typedItem = item as ArticleItem;
-            return (
-            <TableRow key={typedItem.id}>
+          {(item) => (
+            <TableRow key={item.id}>
               {(columnKey) => {
-                let value = getKeyValue(typedItem, columnKey);
+                let value = getKeyValue(item, columnKey);
 
                 if (columnKey === 'publishTime') {
                   value = dayjs(value * 1e3).format('YYYY-MM-DD HH:mm:ss');
@@ -107,7 +95,7 @@ const ArticleList: FC = () => {
                         showAnchorIcon
                         color="foreground"
                         target="_blank"
-                        href={`https://mp.weixin.qq.com/s/${typedItem.id}`}
+                        href={`https://mp.weixin.qq.com/s/${item.id}`}
                       >
                         {value}
                       </Link>
@@ -117,8 +105,7 @@ const ArticleList: FC = () => {
                 return <TableCell>{value}</TableCell>;
               }}
             </TableRow>
-            );
-          }}
+          )}
         </TableBody>
       </Table>
     </div>

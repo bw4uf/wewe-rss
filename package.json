@@ -4,15 +4,13 @@
   "private": true,
   "author": "cooderl <cooder@111965.xyz>",
   "description": "",
-
-  "packageManager": "pnpm@8.15.6",
+  "main": "index.js",
   "engines": {
     "node": ">=20.9.0",
     "pnpm": ">=8.6.1",
     "vscode": ">=1.79"
   },
   "scripts": {
-    "start": "./docker-bootstrap.sh",
     "dev": "pnpm run --parallel dev",
     "build:server": "pnpm --filter server build",
     "build:web": "pnpm --filter web build",
@@ -22,9 +20,6 @@
     "fmt.check": "prettier --check ."
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.3.2",
-    "typescript": "^5.3.3",
-    "vite": "^5.1.4",
     "prettier": "^3.2.5"
   }
 }
