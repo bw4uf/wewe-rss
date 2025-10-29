@@ -17,6 +17,21 @@ RUN pnpm install --force
 COPY . .
 RUN pnpm run build:server && pnpm run build:web
 
+# 创建 Zeabur 期望的根目录 dist/index.js
+RUN mkdir -p dist && \
+    echo 'console.log("🚀 Starting via root dist/index.js...");' > dist/index.js && \
+    echo 'const { execSync } = require("child_process");' >> dist/index.js && \
+    echo 'try {' >> dist/index.js && \
+    echo '  console.log("🔄 Running database migrations...");' >> dist/index.js && \
+    echo '  execSync("npx prisma migrate deploy", { stdio: "inherit", env: process.env, cwd: "/app" });' >> dist/index.js && \
+    echo '  console.log("🚀 Starting NestJS application...");' >> dist/index.js && \
+    echo '  require("./apps/server/dist/main");' >> dist/index.js && \
+    echo '} catch (error) {' >> dist/index.js && \
+    echo '  console.error("❌ Startup failed:", error.message);' >> dist/index.js && \
+    echo '  console.error("Error stack:", error.stack);' >> dist/index.js && \
+    echo '  process.exit(1);' >> dist/index.js && \
+    echo '}' >> dist/index.js
+
 # ------- 运行阶段 -------
 FROM node:20-alpine
 WORKDIR /app
@@ -30,7 +45,8 @@ COPY apps/server/package.json ./apps/server/
 RUN pnpm install --prod --force
 
 # 拷贝构建产物
-COPY --from=builder /usr/src/app/apps/server/dist ./dist
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/apps/server/dist ./apps/server/dist
 COPY --from=builder /usr/src/app/apps/server/client ./client
 COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./docker-bootstrap.sh
@@ -38,10 +54,6 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./index.js
 
 # 设置脚本权限
 RUN chmod +x ./docker-bootstrap.sh
-
-# 创建兼容性入口文件，重定向到 main.js
-RUN echo 'console.log("🚀 Starting via index.js compatibility layer...");' > ./dist/index.js && \
-    echo 'require("./main");' >> ./dist/index.js
 
 
 
