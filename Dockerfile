@@ -54,6 +54,7 @@ COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
 COPY --from=builder /usr/src/app/apps/server/prisma ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
+COPY dist/index.js ./dist/index.js
 
 # 设置脚本权限
 RUN chmod +x ./apps/server/docker-bootstrap.sh
@@ -108,6 +109,7 @@ COPY --from=builder /usr/src/app/apps/server/client ./apps/server/client
 COPY --from=builder /usr/src/app/apps/server/prisma-sqlite ./prisma
 COPY --from=builder /usr/src/app/apps/server/docker-bootstrap.sh ./apps/server/docker-bootstrap.sh
 COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
+COPY dist/index.js ./dist/index.js
 
 # 设置脚本权限
 RUN chmod +x ./apps/server/docker-bootstrap.sh
