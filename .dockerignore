@@ -2,7 +2,9 @@ node_modules
 .git
 .gitignore
 *.md
-/dist
+/apps/server/dist
+/apps/web/dist
+/apps/web/dist-ssr
 .env
 .next
 .DS_Store
