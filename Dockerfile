@@ -105,7 +105,8 @@ COPY --from=builder /usr/src/app/apps/server/index.js ./apps/server/index.js
 # 设置脚本权限
 RUN chmod +x ./apps/server/docker-bootstrap.sh
 
-# 确保根入口 dist/index.js 存在（Zeabur 会强制执行）
+# 确保根入口 dist/index.js 存在（已从 builder 阶段复制）
+# Cache-bust: 2024-10-30 force rebuild
 
 # 暴露端口
 EXPOSE 4000
