@@ -39,6 +39,9 @@ RUN mkdir -p dist && \
 FROM node:20-alpine AS app
 WORKDIR /app
 
+# 配置 npm 镜像源（确保运行阶段也使用镜像源）
+RUN npm config set registry https://registry.npmmirror.com
+
 # 安装 pnpm
 RUN npm i -g pnpm
 
@@ -79,6 +82,9 @@ CMD ["node", "dist/index.js"]
 # ------- 运行阶段（sqlite 变体）-------
 FROM node:20-alpine AS app-sqlite
 WORKDIR /app
+
+# 配置 npm 镜像源（确保运行阶段也使用镜像源）
+RUN npm config set registry https://registry.npmmirror.com
 
 # 安装 pnpm
 RUN npm i -g pnpm
